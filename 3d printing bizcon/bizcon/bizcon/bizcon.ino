@@ -1,6 +1,6 @@
 /*
 	Name:		bizcon.ino
-	Created:	19-08-15 ¿ÀÈÄ 2:20:57
+	Created:	19-08-15 ì˜¤í›„ 2:20:57
 	Author:		Kang Minkyu
 */
 
@@ -16,11 +16,50 @@ const int LOADCELL_SCK_PIN = 3;
 const int BLUETOOTH_RX_PIN = 7;
 const int BLUETOOTH_TX_PIN = 8;
 const int NEOPIXEL_LED_PIN = 5;
+const int BUZZER_PIN = 6;
 #define NUMPIXELS 4
 
 HX711 mHX711;
 //SoftwareSerial mHM10(BLUETOOTH_RX_PIN, BLUETOOTH_TX_PIN);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_LED_PIN, NEO_GRB + NEO_KHZ800);
+
+long getPressure() {
+	long pressure = -1;
+	if (mHX711.is_ready()) {
+		pressure = mHX711.read();
+		pressure /= 10000;
+	}
+	else {
+		Serial.println("HX711 not found.");
+	}
+	return pressure;
+}
+
+void setStripLed(int cnt) {
+	for (int i = 0; i < NUMPIXELS; i++) {
+		if (i < cnt) {
+			switch (i)
+			{
+			case 0:
+				pixels.setPixelColor(i, pixels.Color(255, 0, 0));
+				break;
+			case 1:
+				pixels.setPixelColor(i, pixels.Color(255, 0, 0));
+				break;
+			case 2:
+				pixels.setPixelColor(i, pixels.Color(255, 255, 0));
+				break;
+			case 3:
+				pixels.setPixelColor(i, pixels.Color(0, 255, 0));
+				break;
+			}
+		}
+		else {
+			pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+		}
+		pixels.show();
+	}
+}
 
 void setup() {
 	Serial.begin(9600);
@@ -37,32 +76,35 @@ void loop() {
 	if (Serial.available()) {
 		mHM10.write(Serial.read());
 	}*/
-	if (mHX711.is_ready()) {
-		long reading = mHX711.read();
-		reading /= 10000;
-
+	long reading = getPressure();
+	if (reading > 0) {
 
 		Serial.print("HX711 reading: ");
 		//mHM10.print("HX711 reading: ");
 		Serial.println(reading);
 		//mHM10.write(reading);
 		//mHM10.write("\n");
-		int num = 0;
-		if (reading < 21) num = 0;
-		else if (reading < 22) num = 1;
-		else if (reading < 23) num = 2;
-		else if (reading < 24) num = 3;
-		else num = 4;
-		for (int index = 0; index <= NUMPIXELS; index++) {
-			if (index <= num) pixels.setPixelColor(index, pixels.Color(255, 255, 255));
-			else pixels.setPixelColor(index, pixels.Color(0, 0, 0));
-			pixels.show();
+
+		if (reading <= 20) {
+			setStripLed(0);
+			noTone(BUZZER_PIN);
+		}
+		else if (reading <= 21) {
+			setStripLed(1);
+			noTone(BUZZER_PIN);
+		}
+		else if (reading <= 22) {
+			setStripLed(2);
+			noTone(BUZZER_PIN);
+		}
+		else if (reading <= 23) {
+			setStripLed(3);
+			noTone(BUZZER_PIN);
+		}
+		else {
+			setStripLed(4);
+			tone(BUZZER_PIN, 1000);
 		}
 	}
-	else {
-		Serial.println("HX711 not found.");
-		//mHM10.println("HX711 not found.");
-	}
-
 	delay(300);
 }
